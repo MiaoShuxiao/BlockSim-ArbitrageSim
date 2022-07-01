@@ -26,7 +26,7 @@ class BlockCommit(BaseBlockCommit):
         if blockPrev == miner.last_block().id:
             Statistics.totalBlocks += 1 # count # of total blocks created!
             if p.hasTrans:
-                if p.Ttechnique == "Light": blockTrans,blockSize = LT.execute_transactions()
+                if p.Ttechnique == "Light": blockTrans,blockSize = LT.execute_transactions(miner,eventTime)
                 elif p.Ttechnique == "Full": blockTrans,blockSize = FT.execute_transactions(miner,eventTime)
 
                 event.block.transactions = blockTrans
@@ -36,10 +36,17 @@ class BlockCommit(BaseBlockCommit):
                 BlockCommit.update_unclechain(miner)
                 blockUncles = Node.add_uncles(miner) # add uncles to the block
                 event.block.uncles = blockUncles #(only when uncles activated)
+            pickUpTime = 0
+            prevBlockTime = 0
+            if blockPrev != -1:
+                pickUpTime = miner.blockchain[-1].timestamp
+
+                if blockPrev != 0:
+                    prevBlockTime = miner.blockchain[-2].timestamp
 
             miner.blockchain.append(event.block)
 
-            if p.hasTrans and p.Ttechnique == "Light":LT.create_transactions() # generate transactions
+            if p.hasTrans and p.Ttechnique == "Light":LT.create_transactions(pickUpTime, prevBlockTime) # generate transactions
             BlockCommit.propagate_block(event.block)
             BlockCommit.generate_next_block(miner,eventTime)# Start mining or working on the next block
 

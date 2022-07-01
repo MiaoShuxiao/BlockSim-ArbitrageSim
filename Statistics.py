@@ -16,6 +16,7 @@ class Statistics:
     staleRate=0
     blockData=[]
     blocksResults=[]
+    transactionResults=[]
     profits= [[0 for x in range(7)] for y in range(p.Runs * len(p.NODES))] # rows number of miners * number of runs, columns =7
     index=0
     chain=[]
@@ -35,6 +36,10 @@ class Statistics:
             if p.model==2: Statistics.uncleBlocks += len(b.uncles)
             else: Statistics.uncleBlocks = 0
             trans += len(b.transactions)
+
+            for t in b.transactions:
+                transactionRow = [t.id, t.receiveTime, t.pickUpTime, t.sender, t.to, t.size, t.fee, t.miner.id, t.executionTime, t.profit]
+                Statistics.transactionResults+=[transactionRow]
         Statistics.staleRate= round(Statistics.staleBlocks/Statistics.totalBlocks * 100, 2)
         if p.model==2: Statistics.uncleRate= round(Statistics.uncleBlocks/Statistics.totalBlocks * 100, 2)
         else: Statistics.uncleRate==0
@@ -87,12 +92,15 @@ class Statistics:
         if p.model==2: df4.columns= ['Block Depth', 'Block ID', 'Previous Block', 'Block Timestamp', 'Miner ID', '# transactions','Block Limit', 'Uncle Blocks']
         else: df4.columns= ['Block Depth', 'Block ID', 'Previous Block', 'Block Timestamp', 'Miner ID', '# transactions', 'Block Size']
 
+        df6 = pd.DataFrame(Statistics.transactionResults)
+        df6.columns=['tr ID', 'Received Time', 'Pick Up Time', 'Sender ID', 'Receiver ID', 'Tx Size', 'Tx fee', 'Miner ID', 'Execution Time', 'profit']
+
         writer = pd.ExcelWriter(fname, engine='xlsxwriter')
         df1.to_excel(writer, sheet_name='InputConfig')
         df2.to_excel(writer, sheet_name='SimOutput')
         df3.to_excel(writer, sheet_name='Profit')
         df4.to_excel(writer,sheet_name='Chain')
-
+        df6.to_excel(writer, sheet_name='Transaction', startcol=-1)
         writer.save()
 
     ########################################################### Reset all global variables used to calculate the simulation results ###########################################################################################

@@ -1,3 +1,4 @@
+from datetime import datetime
 from InputsConfig import InputsConfig as p
 from Event import Event, Queue
 from Scheduler import Scheduler
@@ -41,7 +42,7 @@ def main():
         clock = 0  # set clock to 0 at the start of the simulation
         if p.hasTrans:
             if p.Ttechnique == "Light":
-                LT.create_transactions()  # generate pending transactions
+                LT.create_transactions(0, 0)  # generate pending transactions
             elif p.Ttechnique == "Full":
                 FT.create_transactions()  # generate pending transactions
 
@@ -80,8 +81,7 @@ def main():
                 p.Bsize/1000000, p.Tn/1000)
             # print all the simulation results in an excel file
             Statistics.print_to_excel(fname)
-        fname = "(Allverify)1day_{0}M_{1}K.xlsx".format(
-                p.Bsize/1000000, p.Tn/1000)
+        fname = f"_{int(p.simTime/(24*60*60))}days_{datetime.now()}.xlsx".replace(':', '_')
         # print all the simulation results in an excel file
         Statistics.print_to_excel(fname)
         Statistics.reset2()  # reset profit results
