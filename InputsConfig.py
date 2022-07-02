@@ -111,7 +111,10 @@ class InputsConfig:
         for w in range(u):
             USERS.append(User(id=w, connectedMiner = np.random.choice (NODES).id))
 
+        USERLATENCY = np.random.normal(0.4, 0.4, u)
+
         ''' Initiate a Coalition with 4 nodes '''
+        c = 6
         COALITIONS = []
         COALITIONS.append(Coalition(id = 0, users = [0, 1, 2, 3], probRate = 0.8))
         COALITIONS.append(Coalition(id = 1, users = [4, 5], probRate = 0.7))
@@ -120,12 +123,13 @@ class InputsConfig:
 
         ''' TODO: Genearate User to User latency matrix '''
         latencyMean = 0.5
-        std = 1
+        std = 0.5
         MATRIX = np.random.normal(latencyMean, std, size=(Nn, Nn))
         mirror = True
         if mirror == True:
             for i in range(0, Nn):
                 for j in range(i, Nn):
+                    MATRIX[i,j] = abs(MATRIX[j,i])
                     MATRIX[j,i] = MATRIX[i,j]
 
         np.fill_diagonal(MATRIX, 0)

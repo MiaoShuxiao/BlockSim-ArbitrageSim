@@ -5,5 +5,3 @@ class Coalition():
         self.id = id
         self.users = users
         self.probRate = probRate
-
-

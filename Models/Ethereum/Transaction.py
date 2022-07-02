@@ -7,6 +7,7 @@ import operator
 from Models.Ethereum.Distribution.DistFit import DistFit
 import math
 from queue import PriorityQueue
+import copy
 
 class Transaction(object):
 
@@ -65,13 +66,14 @@ class LightTransaction():
 
         LightTransaction.pool=[]
         mean = math.ceil(pickUpTime - prevTime)
-        # little trick to generate genesis transactions
-        if mean == 0:
-            mean = 1
+
 
         if pickUpTime == 0 and prevTime == 0:
             mean = random.randint(0, p.Binterval) * p.Tn
-        Psize= round(random.expovariate(1 / (p.Tn * mean)))
+        # little trick to generate genesis transactions
+        if mean == 0:
+            mean = 1
+        Psize= round(random.expovariate(1 / mean))
         print(prevTime, pickUpTime, Psize)
         #if LightTransaction.x<1:
         #DistFit.fit() # fit distributions
@@ -84,7 +86,7 @@ class LightTransaction():
             tx.id= random.randrange(100000000000)
             senderInfo = random.choice (p.USERS)
             tx.sender = senderInfo.id
-            tx.to= random.choice (p.NODES).id
+            tx.to= senderInfo.connectedMiner
             tx.size= random.expovariate(1/p.Tsize)
             tx.pickUpTime = pickUpTime
             tx.receiveTime = random.uniform(prevTime, pickUpTime)
@@ -96,11 +98,11 @@ class LightTransaction():
             participants = []
             for j in p.COALITIONS:
                 prob = random.random()
-                if(prob < j.probRate):
+                if(prob < j.probRate and j.users != []):
                     participants += [j]
 
-            if participants > 1:
-                create_auction(participants, tx, prevTime, pickUpTime)
+            if len(participants) > 1:
+                LightTransaction.create_auction(participants, tx, prevTime, pickUpTime)
 
             tx.fee= tx.usedGas * tx.gasPrice
             LightTransaction.pool += [tx]
@@ -127,12 +129,58 @@ class LightTransaction():
                 count+=1
         return transactions, limit
 
+
     def create_auction(participants, tx, prevTime, pickUpTime):
         auction = PriorityQueue()
-        auction.put(tx.receiveTime, tx)
         currTime = tx.receiveTime
-        while currTime < pickUpTime:
-            
+        coalitionDict = {}
+        for c1 in participants:
+            #min_max
+            selectedUser = -1
+            minLatency = -99999
+            selectedLatency = []
+            for u in c1.users:
+                latency = p.MATRIX[p.USERS[u].connectedMiner, :]
+                calculateLatency = p.USERLATENCY
+                for receiver in p.USERS:
+                    calculateLatency[receiver.id] += latency[receiver.connectedMiner]
+                calculateLatency[c1.users] = 0
+                delay_time = min(calculateLatency[calculateLatency > 0])
+                if minLatency < delay_time:
+                    selectedUser = u
+                    minLatency = delay_time
+                    selectedLatency = calculateLatency
+            coalitionDict[c1.id] = (selectedUser, selectedLatency)
+        prevCoalition = next((e for e in p.COALITIONS if 1 in e.users), None)
+
+        auctionResult = LightTransaction.exe_auction(participants, tx, prevCoalition, pickUpTime, coalitionDict)
+        print(auctionResult)
+
+
+    def exe_auction(participants, tx, prevCoalition, pickUpTime, coalitionDict):
+        bids = PriorityQueue()
+        latestTxFromCoalition = {}
+        latestTxFromCoalition[prevCoalition] = tx
+        bids.put((tx.receiveTime, tx))
+        currentTime = tx.receiveTime
+        while currentTime < pickUpTime:
+            currBid = bids.get()[1]
+            currentTime = currBid.receiveTime
+            for c in participants:
+                if currBid.sender in c.users:
+                    continue
+                listener = coalitionDict[prevCoalition.id][1]
+                listenDelay = min(listener[c.users])
+                if (c.id not in latestTxFromCoalition) or (latestTxFromCoalition[c.id].gasPrice < currBid.gasPrice):
+                    newBid = copy.deepcopy(currBid)
+                    newBid.gasPrice = newBid.gasPrice * 1.20
+                    newBid.sender = coalitionDict[c.id][0]
+                    newBid.to = p.USERS[u].connectedMiner
+                    newBid.receiveTime = newBid.receiveTime + listenDelay + p.USERLATENCY[u]
+                    latestTxFromCoalition[c.id] = newBid
+                    bids.put((newBid.receiveTime, newBid))
+        return latestTxFromCoalition
+
 
 class FullTransaction():
     x=0 # counter to only fit distributions once during the simulation
