@@ -42,7 +42,7 @@ class BlockCommit(BaseBlockCommit):
                         if(len(c.users) > 0):
                             coalitionCount+=1
                     print("CURRENT COALITIONS:", coalitionCount)
-                    p.COALITIONCOUNT += [(p.roundCount, coalitionCount)]
+                    p.COALITIONCOUNTS += [[p.roundCount, coalitionCount]]
 
             if p.hasUncles:
                 BlockCommit.update_unclechain(miner)

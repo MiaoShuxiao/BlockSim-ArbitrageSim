@@ -17,6 +17,7 @@ class Statistics:
     blockData=[]
     blocksResults=[]
     transactionResults=[]
+    coalitionResult=[]
     profits= [[0 for x in range(7)] for y in range(p.Runs * len(p.NODES))] # rows number of miners * number of runs, columns =7
     index=0
     chain=[]
@@ -45,6 +46,7 @@ class Statistics:
         else: Statistics.uncleRate==0
         Statistics.blockData = [ Statistics.totalBlocks, Statistics.mainBlocks,  Statistics.uncleBlocks, Statistics.uncleRate, Statistics.staleBlocks, Statistics.staleRate, trans]
         Statistics.blocksResults+=[Statistics.blockData]
+        Statistics.coalitionResult = p.COALITIONCOUNTS
 
     ########################################################### Calculate and distibute rewards among the miners ###########################################################################################
     def profit_results():
@@ -63,6 +65,7 @@ class Statistics:
             Statistics.profits[i][6]= m.balance
 
         Statistics.index+=1
+    ########################################################### prepare the coalition results  ###########################################################################################
 
     ########################################################### prepare the global chain  ###########################################################################################
     def global_chain():
@@ -95,11 +98,15 @@ class Statistics:
         df6 = pd.DataFrame(Statistics.transactionResults)
         df6.columns=['tr ID', 'Received Time', 'Pick Up Time', 'Sender ID', 'Receiver ID', 'Tx Size', 'Tx fee', 'Miner ID', 'Execution Time', 'profit']
 
+        df7 = pd.DataFrame(Statistics.coalitionResult)
+        df7.columns = ['Round', 'Remaining Coalition Count']
+
         writer = pd.ExcelWriter(fname, engine='xlsxwriter')
         df1.to_excel(writer, sheet_name='InputConfig')
         df2.to_excel(writer, sheet_name='SimOutput')
         df3.to_excel(writer, sheet_name='Profit')
         df4.to_excel(writer,sheet_name='Chain')
+        df7.to_excel(writer, sheet_name='Coalition')
         df6.to_excel(writer, sheet_name='Transaction', startcol=-1)
         writer.save()
 
