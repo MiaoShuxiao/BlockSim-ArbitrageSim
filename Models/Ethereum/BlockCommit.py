@@ -32,7 +32,7 @@ class BlockCommit(BaseBlockCommit):
                 p.blockCount+=1
                 event.block.transactions = blockTrans
                 event.block.usedgas= blockSize
-                if(p.blockCount == 10):
+                if(p.blockCount == p.coalitionUpdatePerBlock):
                     p.roundCount += 1
                     p.blockCount = 0
                     BlockCommit.coalitionUpdate()
@@ -77,7 +77,7 @@ class BlockCommit(BaseBlockCommit):
             newC = []
             for u in c.users:
                 prob = random.random()
-                if(prob < 0.5): # can change the moving rate here
+                if(prob > p.userMovingProb): # can change the moving rate here
                     newC += [u]
                 else:
                     p.COALITIONS[winnerC].users += [u]

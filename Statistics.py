@@ -18,6 +18,7 @@ class Statistics:
     blocksResults=[]
     transactionResults=[]
     coalitionResult=[]
+    userResult=[]
     profits= [[0 for x in range(7)] for y in range(p.Runs * len(p.NODES))] # rows number of miners * number of runs, columns =7
     index=0
     chain=[]
@@ -47,6 +48,9 @@ class Statistics:
         Statistics.blockData = [ Statistics.totalBlocks, Statistics.mainBlocks,  Statistics.uncleBlocks, Statistics.uncleRate, Statistics.staleBlocks, Statistics.staleRate, trans]
         Statistics.blocksResults+=[Statistics.blockData]
         Statistics.coalitionResult = p.COALITIONCOUNTS
+        for u in p.USERS:
+            userRow = [u.id, u.connectedMiner, u.networkLatency, u.profit]
+            Statistics.userResult += [userRow]
 
     ########################################################### Calculate and distibute rewards among the miners ###########################################################################################
     def profit_results():
@@ -101,12 +105,16 @@ class Statistics:
         df7 = pd.DataFrame(Statistics.coalitionResult)
         df7.columns = ['Round', 'Remaining Coalition Count']
 
+        df8 = pd.DataFrame(Statistics.userResult)
+        df8.columns = ["ID", "connectedMiner", "networkLatency", "profit"]
+
         writer = pd.ExcelWriter(fname, engine='xlsxwriter')
         df1.to_excel(writer, sheet_name='InputConfig')
         df2.to_excel(writer, sheet_name='SimOutput')
         df3.to_excel(writer, sheet_name='Profit')
         df4.to_excel(writer,sheet_name='Chain')
         df7.to_excel(writer, sheet_name='Coalition')
+        df8.to_excel(writer, sheet_name='User')
         df6.to_excel(writer, sheet_name='Transaction', startcol=-1)
         writer.save()
 

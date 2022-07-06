@@ -92,7 +92,7 @@ class LightTransaction():
             tx.gasLimit=21000
             tx.usedGas= random.expovariate(1/3000)
             tx.gasPrice = random.expovariate(1/100)
-            tx.profit = 10 * (10 ** 18) #ETH
+            tx.profit = random.expovariate(1/(10 ** 18)) #ETH
 
             participants = []
             for j in p.COALITIONS:
@@ -179,6 +179,7 @@ class LightTransaction():
                 if ((c.id not in latestTxFromCoalition) or (latestTxFromCoalition[c.id].gasPrice < currBid[2].gasPrice)) and (currBid[2].gasPrice * currBid[2].usedGas < currBid[2].profit):
                     newBid = copy.deepcopy(currBid[2])
                     newBid.gasPrice = newBid.gasPrice * 1.20
+                    newBid.fee= newBid.usedGas * newBid.gasPrice
                     newBid.sender = coalitionDict[c.id][0]
                     newBid.to = p.USERS[newBid.sender].connectedMiner
                     newBid.receiveTime = currentTime + listenDelay + p.USERLATENCY[newBid.sender]
@@ -191,7 +192,6 @@ class LightTransaction():
         winnerGasPrice = -99999
         toBeExecuted = []
         for c in resultDict:
-            toBeExecuted += [resultDict[c]]
             p.COALITIONS[c].totalCount += 1
             if(resultDict[c].gasPrice > winnerGasPrice):
                 winner = c
@@ -199,12 +199,18 @@ class LightTransaction():
         for c in resultDict:
             if(c == winner):
                 p.COALITIONS[c].winCount += 1
+                resultDict[c].profit = 0
                 for u in p.COALITIONS[c].users:
-                    p.USERS[u].profit += (resultDict[c].profit / len(p.COALITIONS[c].users) - resultDict[c].gasPrice * resultDict[c].usedGas)
+                    print("winner is:", u)
+                    print("tx profit is:", resultDict[c].profit)
+                    print("income is:", resultDict[c].profit / len(p.COALITIONS[c].users) - resultDict[c].gasPrice * resultDict[c].usedGas)
+                    p.USERS[u].profit += ((resultDict[c].profit - resultDict[c].gasPrice * resultDict[c].usedGas) / len(p.COALITIONS[c].users))
             else:
                 for u in p.COALITIONS[c].users:
+                    print("loser is:", u)
+                    print("loss is:", resultDict[c].gasPrice * resultDict[c].usedGas * 0.2 / len(p.COALITIONS[c].users))
                     p.USERS[u].profit -= resultDict[c].gasPrice * resultDict[c].usedGas * 0.2 / len(p.COALITIONS[c].users)
-
+            toBeExecuted += [resultDict[c]]
         return toBeExecuted
 
 

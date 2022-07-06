@@ -135,12 +135,13 @@ class InputsConfig:
         np.fill_diagonal(MATRIX, 0)
 
         ''' Simulation Parameters '''
-        simTime = 500  # the simulation length (in seconds)
+        simTime = 3600  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
         arbiPercentage = 0.2
         roundCount = 0
         blockCount = 0
-
+        coalitionUpdatePerBlock = 13
+        userMovingProb = 0.4
         COALITIONCOUNTS = []
         ''' Input configurations for AppendableBlock model '''
     if model == 3:
