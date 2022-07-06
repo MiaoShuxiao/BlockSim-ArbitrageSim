@@ -138,7 +138,10 @@ class InputsConfig:
         simTime = 500  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
         arbiPercentage = 0.2
+        roundCount = 0
+        blockCount = 0
 
+        COALITIONCOUNTS = []
         ''' Input configurations for AppendableBlock model '''
     if model == 3:
         ''' Transaction Parameters '''

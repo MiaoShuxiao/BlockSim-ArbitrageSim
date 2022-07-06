@@ -6,6 +6,7 @@ from Models.Ethereum.Transaction import LightTransaction as LT, FullTransaction 
 from Models.Network import Network
 from Models.Ethereum.Consensus import Consensus as c
 from Models.BlockCommit import BlockCommit as BaseBlockCommit
+import random
 
 class BlockCommit(BaseBlockCommit):
 
@@ -28,9 +29,20 @@ class BlockCommit(BaseBlockCommit):
             if p.hasTrans:
                 if p.Ttechnique == "Light": blockTrans,blockSize = LT.execute_transactions(miner,eventTime)
                 elif p.Ttechnique == "Full": blockTrans,blockSize = FT.execute_transactions(miner,eventTime)
-
+                p.blockCount+=1
                 event.block.transactions = blockTrans
                 event.block.usedgas= blockSize
+                if(p.blockCount == 10):
+                    p.roundCount += 1
+                    p.blockCount = 0
+                    BlockCommit.coalitionUpdate()
+                    print("CURRENT ROUND:", p.roundCount)
+                    coalitionCount = 0
+                    for c in p.COALITIONS:
+                        if(len(c.users) > 0):
+                            coalitionCount+=1
+                    print("CURRENT COALITIONS:", coalitionCount)
+                    p.COALITIONCOUNT += [(p.roundCount, coalitionCount)]
 
             if p.hasUncles:
                 BlockCommit.update_unclechain(miner)
@@ -49,6 +61,28 @@ class BlockCommit(BaseBlockCommit):
             if p.hasTrans and p.Ttechnique == "Light":LT.create_transactions(pickUpTime, prevBlockTime) # generate transactions
             BlockCommit.propagate_block(event.block)
             BlockCommit.generate_next_block(miner,eventTime)# Start mining or working on the next block
+
+    def coalitionUpdate():
+        winnerC = -1
+        winRate = 0
+        for c in p.COALITIONS:
+            if c.winCount > winRate:
+                winnerC = c.id
+                winRate = c.winCount
+
+        for c in p.COALITIONS:
+            if c.id == winnerC:
+                continue
+
+            newC = []
+            for u in c.users:
+                prob = random.random()
+                if(prob < 0.5): # can change the moving rate here
+                    newC += [u]
+                else:
+                    p.COALITIONS[winnerC].users += [u]
+            c.users = newC
+
 
     # Block Receiving Event
     def receive_block (event):
