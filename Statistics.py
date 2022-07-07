@@ -40,7 +40,7 @@ class Statistics:
             trans += len(b.transactions)
 
             for t in b.transactions:
-                transactionRow = [t.id, t.receiveTime, t.pickUpTime, t.sender, t.to, t.size, t.fee, t.miner.id, t.executionTime, t.profit]
+                transactionRow = [t.id, t.receiveTime, t.pickUpTime, t.sender, t.to, t.size, t.usedGas, t.fee, t.miner.id, t.executionTime, t.profit]
                 Statistics.transactionResults+=[transactionRow]
         Statistics.staleRate= round(Statistics.staleBlocks/Statistics.totalBlocks * 100, 2)
         if p.model==2: Statistics.uncleRate= round(Statistics.uncleBlocks/Statistics.totalBlocks * 100, 2)
@@ -49,7 +49,7 @@ class Statistics:
         Statistics.blocksResults+=[Statistics.blockData]
         Statistics.coalitionResult = p.COALITIONCOUNTS
         for u in p.USERS:
-            userRow = [u.id, u.connectedMiner, u.networkLatency, u.profit]
+            userRow = [u.id, u.connectedMiner, u.networkLatency, u.profit, u.winCount, u.gameCount]
             Statistics.userResult += [userRow]
 
     ########################################################### Calculate and distibute rewards among the miners ###########################################################################################
@@ -100,13 +100,13 @@ class Statistics:
         else: df4.columns= ['Block Depth', 'Block ID', 'Previous Block', 'Block Timestamp', 'Miner ID', '# transactions', 'Block Size']
 
         df6 = pd.DataFrame(Statistics.transactionResults)
-        df6.columns=['tr ID', 'Received Time', 'Pick Up Time', 'Sender ID', 'Receiver ID', 'Tx Size', 'Tx fee', 'Miner ID', 'Execution Time', 'profit']
+        df6.columns=['tr ID', 'Received Time', 'Pick Up Time', 'Sender ID', 'Receiver ID', 'Tx Size', 'Tx Used Gas' , 'Tx fee', 'Miner ID', 'Execution Time', 'profit']
 
         df7 = pd.DataFrame(Statistics.coalitionResult)
         df7.columns = ['Round', 'Remaining Coalition Count']
 
         df8 = pd.DataFrame(Statistics.userResult)
-        df8.columns = ["ID", "connectedMiner", "networkLatency", "profit"]
+        df8.columns = ["ID", "connectedMiner", "networkLatency", "profit", 'winCount', 'game Count']
 
         writer = pd.ExcelWriter(fname, engine='xlsxwriter')
         df1.to_excel(writer, sheet_name='InputConfig')

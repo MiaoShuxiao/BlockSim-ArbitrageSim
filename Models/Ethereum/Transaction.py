@@ -8,7 +8,6 @@ from Models.Ethereum.Distribution.DistFit import DistFit
 import math
 from queue import PriorityQueue
 import copy
-
 class Transaction(object):
 
     """ Defines the Ethereum Block model.
@@ -73,7 +72,6 @@ class LightTransaction():
         if mean == 0:
             mean = 1
         Psize= round(random.expovariate(1 / mean))
-        print(prevTime, pickUpTime, Psize)
         #if LightTransaction.x<1:
         #DistFit.fit() # fit distributions
         #gasLimit,usedGas,gasPrice,_ = DistFit.sample_transactions(Psize) # sampling gas based attributes for transactions from specific distribution
@@ -92,22 +90,31 @@ class LightTransaction():
             tx.gasLimit=21000
             tx.usedGas= random.expovariate(1/3000)
             tx.gasPrice = random.expovariate(1/100)
-            tx.profit = random.expovariate(1/(10 ** 18)) #ETH
+            tx.profit = random.expovariate(1/(10 ** 16))
 
             participants = []
+            test =[]
             for j in p.COALITIONS:
                 if j.users == []:
                     continue
                 prob = random.random()
                 if(prob < j.probRate and j.users != []):
                     participants += [j]
+                    for u in j.users:
+                        p.USERS[u].gameCount += 1
 
             if len(participants) > 1:
                 txGroup = LightTransaction.create_auction(participants, tx, prevTime, pickUpTime)
                 LightTransaction.pool += txGroup
-            else:
+            elif len(participants) == 1:
                 tx.fee= tx.usedGas * tx.gasPrice
                 LightTransaction.pool += [tx]
+                for u in participants[0].users:
+                    p.USERS[u].profit += ((tx.profit - tx.gasPrice * tx.usedGas) / len(participants[0].users))
+            else:
+                for u in participants[0].users:
+                    p.USERS[u].profit += ((tx.profit - tx.gasPrice * tx.usedGas) / len(participants[0].users))
+                p.USERS[tx.sender].profit += (tx.profit - tx.gasPrice * tx.usedGas)
 
         random.shuffle(LightTransaction.pool)
 
@@ -143,7 +150,7 @@ class LightTransaction():
             selectedLatency = []
             for u in c1.users:
                 latency = p.MATRIX[p.USERS[u].connectedMiner, :]
-                calculateLatency = p.USERLATENCY
+                calculateLatency = copy.deepcopy(p.USERLATENCY)
                 for receiver in p.USERS:
                     calculateLatency[receiver.id] += latency[receiver.connectedMiner]
                 delay_time = min(calculateLatency[calculateLatency > 0])
@@ -163,28 +170,35 @@ class LightTransaction():
         count = 0
         bids = PriorityQueue()
         latestTxFromCoalition = {}
-        latestTxFromCoalition[prevCoalition.id] = tx
+        latestTxFromCoalition[prevCoalition.id] = copy.deepcopy(tx)
         bids.put((tx.receiveTime, count, tx, prevCoalition))
         currentTime = tx.receiveTime
         while currentTime < pickUpTime:
+            if(bids.empty()):
+                break
             currBid = bids.get()
             currCoalition = currBid[3]
             currentTime = currBid[2].receiveTime
+            #print("currentTime: ", currentTime, " currentBid: ", currBid[2].gasPrice)
             latestTxFromCoalition[currCoalition.id] = copy.deepcopy(currBid[2])
             for c in participants:
                 if currCoalition.id == c.id:
                     continue
+                #print("DICT:",coalitionDict)
+                #TODO: 2 parameters: node number, text file - n个 有n * 2n个数据， 分别是（均值，方差）
                 listener = coalitionDict[currCoalition.id][1]
-                listenDelay = min(listener[c.users])
-                if ((c.id not in latestTxFromCoalition) or (latestTxFromCoalition[c.id].gasPrice < currBid[2].gasPrice)) and (currBid[2].gasPrice * currBid[2].usedGas < currBid[2].profit):
-                    newBid = copy.deepcopy(currBid[2])
-                    newBid.gasPrice = newBid.gasPrice * 1.20
-                    newBid.fee= newBid.usedGas * newBid.gasPrice
-                    newBid.sender = coalitionDict[c.id][0]
-                    newBid.to = p.USERS[newBid.sender].connectedMiner
-                    newBid.receiveTime = currentTime + listenDelay + p.USERLATENCY[newBid.sender]
-                    count+=1
-                    bids.put((copy.deepcopy(newBid.receiveTime), count, copy.deepcopy(newBid), copy.deepcopy(c)))
+                listenDelay = abs(min(listener[c.users]))
+                if ((c.id not in latestTxFromCoalition) or (latestTxFromCoalition[c.id].gasPrice < currBid[2].gasPrice)):
+                    if((currBid[2].gasPrice * currBid[2].usedGas * 1.2 < currBid[2].profit)):
+                        newBid = copy.deepcopy(currBid[2])
+                        newBid.gasPrice = newBid.gasPrice * 1.15
+                        newBid.fee= newBid.usedGas * newBid.gasPrice
+                        newBid.sender = coalitionDict[c.id][0]
+                        newBid.to = p.USERS[newBid.sender].connectedMiner
+                        newBid.receiveTime = currentTime + listenDelay + p.USERLATENCY[newBid.sender]
+
+                        count+=1
+                        bids.put((copy.deepcopy(newBid.receiveTime), count, copy.deepcopy(newBid), copy.deepcopy(c)))
         return latestTxFromCoalition
 
     def calculate_result(resultDict):
@@ -195,20 +209,24 @@ class LightTransaction():
             p.COALITIONS[c].totalCount += 1
             if(resultDict[c].gasPrice > winnerGasPrice):
                 winner = c
+                winnerGasPrice = resultDict[c].gasPrice
 
         for c in resultDict:
             if(c == winner):
                 p.COALITIONS[c].winCount += 1
                 resultDict[c].profit = 0
                 for u in p.COALITIONS[c].users:
-                    print("winner is:", u)
-                    print("tx profit is:", resultDict[c].profit)
-                    print("income is:", resultDict[c].profit / len(p.COALITIONS[c].users) - resultDict[c].gasPrice * resultDict[c].usedGas)
                     p.USERS[u].profit += ((resultDict[c].profit - resultDict[c].gasPrice * resultDict[c].usedGas) / len(p.COALITIONS[c].users))
+                    p.USERS[u].winCount += 1
             else:
                 for u in p.COALITIONS[c].users:
-                    print("loser is:", u)
-                    print("loss is:", resultDict[c].gasPrice * resultDict[c].usedGas * 0.2 / len(p.COALITIONS[c].users))
+                    #TODO: move 0.2 (LOSS RATE) to the config file
+                    #run multiple time sim and take average
+                    #KEEP THE RAW DATA FILES
+                    #TODO: HOW TO SPLIT THE PROFIT? GAME THEORY - INCENTIVE MECHANISM, DEPEND ON THE CONTRIBUTIONS
+                    # HELPER, BUDGET, LOCATION
+                    #TODO: GRAPH - NUMBER OF COALITION / TIME
+                    #TODO: GRAPH - REVENUE PER COALITION / REVENUE PER USERS
                     p.USERS[u].profit -= resultDict[c].gasPrice * resultDict[c].usedGas * 0.2 / len(p.COALITIONS[c].users)
             toBeExecuted += [resultDict[c]]
         return toBeExecuted

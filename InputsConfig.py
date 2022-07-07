@@ -112,7 +112,6 @@ class InputsConfig:
             USERS.append(User(id=w, connectedMiner = np.random.choice (NODES).id))
 
         USERLATENCY = np.random.normal(0.4, 0.4, u)
-
         ''' Initiate a Coalition with 4 nodes '''
         c = 6
         COALITIONS = []
@@ -135,14 +134,14 @@ class InputsConfig:
         np.fill_diagonal(MATRIX, 0)
 
         ''' Simulation Parameters '''
-        simTime = 3600  # the simulation length (in seconds)
+        simTime = 500  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
         arbiPercentage = 0.2
         roundCount = 0
         blockCount = 0
-        coalitionUpdatePerBlock = 13
-        userMovingProb = 0.4
-        COALITIONCOUNTS = []
+        coalitionUpdatePerBlock = 13000
+        userMovingProb = 0.3
+        COALITIONCOUNTS = [[0, c]]
         ''' Input configurations for AppendableBlock model '''
     if model == 3:
         ''' Transaction Parameters '''

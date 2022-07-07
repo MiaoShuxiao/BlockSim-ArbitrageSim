@@ -26,6 +26,7 @@ class BlockCommit(BaseBlockCommit):
 
         if blockPrev == miner.last_block().id:
             Statistics.totalBlocks += 1 # count # of total blocks created!
+            print(Statistics.totalBlocks)
             if p.hasTrans:
                 if p.Ttechnique == "Light": blockTrans,blockSize = LT.execute_transactions(miner,eventTime)
                 elif p.Ttechnique == "Full": blockTrans,blockSize = FT.execute_transactions(miner,eventTime)
@@ -36,12 +37,11 @@ class BlockCommit(BaseBlockCommit):
                     p.roundCount += 1
                     p.blockCount = 0
                     BlockCommit.coalitionUpdate()
-                    print("CURRENT ROUND:", p.roundCount)
                     coalitionCount = 0
                     for c in p.COALITIONS:
                         if(len(c.users) > 0):
                             coalitionCount+=1
-                    print("CURRENT COALITIONS:", coalitionCount)
+                    print("Round:", p.roundCount, "Coalition Count:", coalitionCount)
                     p.COALITIONCOUNTS += [[p.roundCount, coalitionCount]]
 
             if p.hasUncles:
