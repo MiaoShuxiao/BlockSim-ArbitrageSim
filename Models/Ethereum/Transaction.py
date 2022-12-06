@@ -65,7 +65,6 @@ class LightTransaction():
         LightTransaction.pool=[]
         mean = math.ceil(pickUpTime - prevTime)
 
-
         if pickUpTime == 0 or prevTime == 0:
             mean = random.randint(0, p.Binterval) * p.Tn
         # little trick to generate genesis transactions
