@@ -7,6 +7,7 @@ from Models.Network import Network
 from Models.Ethereum.Consensus import Consensus as c
 from Models.BlockCommit import BlockCommit as BaseBlockCommit
 import random
+import copy
 
 class BlockCommit(BaseBlockCommit):
 
@@ -32,13 +33,14 @@ class BlockCommit(BaseBlockCommit):
                 elif p.Ttechnique == "Full": blockTrans,blockSize = FT.execute_transactions(miner,eventTime)
                 p.blockCount+=1
                 event.block.transactions = blockTrans
-                event.block.usedgas= blockSize
+                event.block.usedgas = blockSize
                 if(p.blockCount == p.coalitionUpdatePerBlock):
                     p.roundCount += 1
                     p.blockCount = 0
                     BlockCommit.coalitionUpdate()
                     coalitionCount = 0
                     for c in p.COALITIONS:
+                        c.currentRoundProfit = 0
                         if(len(c.users) > 0):
                             coalitionCount+=1
                     print("Round:", p.roundCount, "Coalition Count:", coalitionCount)
@@ -63,26 +65,45 @@ class BlockCommit(BaseBlockCommit):
             BlockCommit.generate_next_block(miner,eventTime)# Start mining or working on the next block
 
     def coalitionUpdate():
-        winnerC = -1
-        winRate = 0
+        winnerC = - 1
+        winnerProfitRate = -100
         for c in p.COALITIONS:
-            if c.winCount > winRate:
-                winnerC = c.id
-                winRate = c.winCount
-
-        for c in p.COALITIONS:
-            if c.id == winnerC:
+            if c.currentRoundBudget <= 0:
+                print(c.id, " out of budget")
                 continue
-
-            newC = []
-            for u in c.users:
-                prob = random.random()
-                if(prob > p.userMovingProb): # can change the moving rate here
-                    newC += [u]
-                else:
-                    p.COALITIONS[winnerC].users += [u]
-            c.users = newC
-
+            stakerReward = c.currentRoundProfit
+            helperReward = 0
+            print("C: ", c.id)
+            print("currProfit: ", c.currentRoundProfit)
+            print("currBudget: ", c.currentRoundBudget)
+            if(c.currentRoundProfit / c.currentRoundBudget > winnerProfitRate):
+                winnerProfitRate = c.currentRoundProfit / c.currentRoundBudget
+                winnerC = c.id
+            if c.currentRoundProfit > 0:
+                stakerReward = c.currentRoundProfit * c.splitRate
+                helperReward = c.currentRoundProfit * (1 - c.splitRate)
+            for userId in c.users:
+                #TODO: Update the profit distribution
+                p.USERS[userId].profit = p.USERS[userId].profit + stakerReward * p.USERS[userId].budget / c.currentRoundBudget
+                p.USERS[userId].profit = p.USERS[userId].profit + helperReward / len(c.users)
+                p.USERS[userId].currentRoundProfit = stakerReward * p.USERS[userId].budget / c.currentRoundBudget
+                p.USERS[userId].currentRoundProfit += (p.USERS[userId].profit + helperReward / len(c.users))
+        if winnerC != -1:
+            print("WinnerC: ", winnerC)
+            print("winnerProfitRate: ", winnerProfitRate)
+            for c in p.COALITIONS:
+                if c.id == winnerC:
+                    continue
+                newC = []
+                for u in c.users:
+                    prob = random.random()
+                    if(prob > p.userMovingProb and p.USERS[u].currentRoundProfit/p.USERS[u].budget < winnerProfitRate):
+                        newC += [u]
+                    else:
+                        p.COALITIONS[winnerC].users += [u]
+                        p.COALITIONS[winnerC].currentRoundBudget += p.USERS[u].budget
+                        c.currentRoundBudget -= p.USERS[u].budget
+                c.users = copy.deepcopy(newC)
 
     # Block Receiving Event
     def receive_block (event):

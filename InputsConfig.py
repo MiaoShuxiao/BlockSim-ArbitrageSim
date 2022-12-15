@@ -80,7 +80,7 @@ class InputsConfig:
         ''' Transaction Parameters '''
         hasTrans = True  # True/False to enable/disable transactions in the simulator
         Ttechnique = "Light"  # Full/Light to specify the way of modelling transactions
-        Tn = 2  # The rate of the number of transactions to be created per second
+        Tn = 10  # The rate of the number of transactions to be created per second
         # The average transaction propagation delay in seconds (Only if Full technique is used)
         Tdelay = 3
         # The transaction fee in Ethereum is calculated as: UsedGas X GasPrice
@@ -89,7 +89,7 @@ class InputsConfig:
         ''' Drawing the values for gas related attributes (UsedGas and GasPrice, CPUTime) from fitted distributions '''
 
         ''' Uncles Parameters '''
-        hasUncles = True  # boolean variable to indicate use of uncle mechansim or not
+        hasUncles = False  # boolean variable to indicate use of uncle mechansim or not
         Buncles = 2  # maximum number of uncle blocks allowed per block
         Ugenerations = 7  # the depth in which an uncle can be included in a block
         Ureward = 0
@@ -109,9 +109,9 @@ class InputsConfig:
         import numpy as np
         USERS = []
         for w in range(u):
-            USERS.append(User(id=w, connectedMiner = np.random.choice (NODES).id))
-
+            USERS.append(User(id=w, connectedMiner = np.random.choice (NODES).id, budget = 10 ** 18))
         USERLATENCY = np.random.normal(0.4, 0.4, u)
+        USERLATENCY = USERLATENCY - min(USERLATENCY)
         ''' Initiate a Coalition with 4 nodes '''
         c = 6
         COALITIONS = []
@@ -120,7 +120,10 @@ class InputsConfig:
         for w in range(2, 6):
             COALITIONS.append(Coalition(id = w, users = [w + 4], probRate = 0.5))
 
-        ''' TODO: Genearate User to User latency matrix '''
+        for co in COALITIONS:
+            for userInCo in co.users:
+                co.currentRoundBudget = USERS[userInCo].budget
+            print(co.id, " budget: ", co.currentRoundBudget)
         latencyMean = 0.5
         std = 0.5
         MATRIX = np.random.normal(latencyMean, std, size=(Nn, Nn))
@@ -139,9 +142,13 @@ class InputsConfig:
         arbiPercentage = 0.2
         roundCount = 0
         blockCount = 0
-        coalitionUpdatePerBlock = 13000
-        userMovingProb = 0.3
+        coalitionUpdatePerBlock = 13
+        userMovingProb = 0.5
+        COALITIONMOVECOST = 10 ** 17
         COALITIONCOUNTS = [[0, c]]
+        FAILEDTXGASRATE = 0.2
+        MINIMUMUPDATEGAP = 0.1
+        COALITIONPROCESSTIME = 0.05
         ''' Input configurations for AppendableBlock model '''
     if model == 3:
         ''' Transaction Parameters '''

@@ -49,7 +49,7 @@ class Statistics:
         Statistics.blocksResults+=[Statistics.blockData]
         Statistics.coalitionResult = p.COALITIONCOUNTS
         for u in p.USERS:
-            userRow = [u.id, u.connectedMiner, u.networkLatency, u.profit, u.winCount, u.gameCount]
+            userRow = [u.id, u.connectedMiner, u.profit, u.budget]
             Statistics.userResult += [userRow]
 
     ########################################################### Calculate and distibute rewards among the miners ###########################################################################################
@@ -106,7 +106,7 @@ class Statistics:
         df7.columns = ['Round', 'Remaining Coalition Count']
 
         df8 = pd.DataFrame(Statistics.userResult)
-        df8.columns = ["ID", "connectedMiner", "networkLatency", "profit", 'winCount', 'game Count']
+        df8.columns = ["ID", "connectedMiner", "profit", 'budget']
 
         writer = pd.ExcelWriter(fname, engine='xlsxwriter')
         df1.to_excel(writer, sheet_name='InputConfig')
