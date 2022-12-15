@@ -40,6 +40,7 @@ class BlockCommit(BaseBlockCommit):
                     BlockCommit.coalitionUpdate()
                     coalitionCount = 0
                     for c in p.COALITIONS:
+                        p.COALITIONDETAILS += [[p.roundCount, c.id, c.users, c.winCount, c.totalCount, c.currentRoundBudget, c.currentRoundProfit]]
                         c.currentRoundProfit = 0
                         if(len(c.users) > 0):
                             coalitionCount+=1
@@ -69,13 +70,9 @@ class BlockCommit(BaseBlockCommit):
         winnerProfitRate = -100
         for c in p.COALITIONS:
             if c.currentRoundBudget <= 0:
-                print(c.id, " out of budget")
                 continue
             stakerReward = c.currentRoundProfit
             helperReward = 0
-            print("C: ", c.id)
-            print("currProfit: ", c.currentRoundProfit)
-            print("currBudget: ", c.currentRoundBudget)
             if(c.currentRoundProfit / c.currentRoundBudget > winnerProfitRate):
                 winnerProfitRate = c.currentRoundProfit / c.currentRoundBudget
                 winnerC = c.id
@@ -89,8 +86,6 @@ class BlockCommit(BaseBlockCommit):
                 p.USERS[userId].currentRoundProfit = stakerReward * p.USERS[userId].budget / c.currentRoundBudget
                 p.USERS[userId].currentRoundProfit += (p.USERS[userId].profit + helperReward / len(c.users))
         if winnerC != -1:
-            print("WinnerC: ", winnerC)
-            print("winnerProfitRate: ", winnerProfitRate)
             for c in p.COALITIONS:
                 if c.id == winnerC:
                     continue

@@ -107,8 +107,10 @@ class LightTransaction():
                     tx.fee= tx.usedGas * tx.gasPrice
                     LightTransaction.pool += [tx]
                     p.COALITIONS[participants[0].id].currentRoundProfit = tx.profit - tx.fee
-                else:
-                    LightTransaction.pool += [tx]
+                    p.AUCTIONDETAILS += [[tx.id, p.COALITIONS[participants[0].id].id,  tx.profit, tx.profit - tx.fee,  (tx.profit - tx.fee) / tx.profit]]
+            else:
+                LightTransaction.pool += [tx]
+
         random.shuffle(LightTransaction.pool)
 
 
@@ -173,13 +175,12 @@ class LightTransaction():
             currBid = bids.get()
             currCoalition = currBid[3]
             currentTime = currBid[2].receiveTime
-            #print("currentTime: ", currentTime, " currentBid: ", currBid[2].gasPrice)
-            latestTxFromCoalition[currCoalition.id] = copy.deepcopy(currBid[2])
             for c in participants:
                 if currCoalition.id == c.id:
                     continue
                 listener = coalitionDict[currCoalition.id][1]
                 listenDelay = abs(min(listener[c.users]))
+                #TODO: try get the top n value
                 if ((c.id not in latestTxFromCoalition) or (latestTxFromCoalition[c.id].gasPrice < currBid[2].gasPrice)):
                     if((currBid[2].gasPrice * currBid[2].usedGas * 1.2 < currBid[2].profit)):
                         newBid = copy.deepcopy(currBid[2])
@@ -191,9 +192,11 @@ class LightTransaction():
                         if(totalDelay < p.MINIMUMUPDATEGAP):
                             totalDelay = p.MINIMUMUPDATEGAP
                         newBid.receiveTime = currentTime + totalDelay
-                        count += 1
-                        print("currentTime: ", currentTime, " pickUpTime: ", pickUpTime, "Count: ", count, " newBidPrice: ", newBid.gasPrice)
-                        bids.put((copy.deepcopy(newBid.receiveTime), count, copy.deepcopy(newBid), copy.deepcopy(c)))
+                        if(newBid.receiveTime <= pickUpTime):
+                            count += 1
+                            print("currentTime: ", currentTime, " pickUpTime: ", pickUpTime, "Count: ", count, " newBidPrice: ", newBid.gasPrice, " CoalitionId: ", c.id)
+                            bids.put((copy.deepcopy(newBid.receiveTime), count, copy.deepcopy(newBid), copy.deepcopy(c)))
+                            latestTxFromCoalition[c.id] = copy.deepcopy(newBid)
         print("bidding eeeeeeeeeeeeeeeend!!!!!")
         return latestTxFromCoalition
 
@@ -210,8 +213,10 @@ class LightTransaction():
             if(c == winner):
                 p.COALITIONS[c].winCount += 1
                 p.COALITIONS[c].currentRoundProfit = p.COALITIONS[c].currentRoundProfit + resultDict[c].profit - resultDict[c].gasPrice * resultDict[c].usedGas
+                p.AUCTIONDETAILS += [[resultDict[c].id, c, resultDict[c].profit, resultDict[c].profit - resultDict[c].gasPrice * resultDict[c].usedGas, (resultDict[c].profit - resultDict[c].gasPrice * resultDict[c].usedGas) /  resultDict[c].profit]]
             else:
                 p.COALITIONS[c].currentRoundProfit = p.COALITIONS[c].currentRoundProfit - resultDict[c].gasPrice * resultDict[c].usedGas * p.FAILEDTXGASRATE
+                p.AUCTIONDETAILS += [[resultDict[c].id, c, resultDict[c].profit, -resultDict[c].gasPrice * resultDict[c].usedGas * p.FAILEDTXGASRATE, 0]]
             toBeExecuted += [resultDict[c]]
         return toBeExecuted
 

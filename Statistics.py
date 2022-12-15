@@ -17,8 +17,11 @@ class Statistics:
     blockData=[]
     blocksResults=[]
     transactionResults=[]
-    coalitionResult=[]
+    coalitionResults=[]
+    coalitionCountResult=[]
+    coalitionChangeResult=[]
     userResult=[]
+    auctionResult = []
     profits= [[0 for x in range(7)] for y in range(p.Runs * len(p.NODES))] # rows number of miners * number of runs, columns =7
     index=0
     chain=[]
@@ -47,7 +50,12 @@ class Statistics:
         else: Statistics.uncleRate==0
         Statistics.blockData = [ Statistics.totalBlocks, Statistics.mainBlocks,  Statistics.uncleBlocks, Statistics.uncleRate, Statistics.staleBlocks, Statistics.staleRate, trans]
         Statistics.blocksResults+=[Statistics.blockData]
-        Statistics.coalitionResult = p.COALITIONCOUNTS
+        Statistics.coalitionCountResult = p.COALITIONCOUNTS
+        Statistics.auctionResult = p.AUCTIONDETAILS
+        Statistics.coalitionChangeResult = p.COALITIONDETAILS
+        for co in p.INITIALCOALITIONS:
+            coalitionRow = [co.id, co.users, co.probRate, co.splitRate]
+            Statistics.coalitionResults += [coalitionRow]
         for u in p.USERS:
             userRow = [u.id, u.connectedMiner, u.profit, u.budget]
             Statistics.userResult += [userRow]
@@ -102,19 +110,31 @@ class Statistics:
         df6 = pd.DataFrame(Statistics.transactionResults)
         df6.columns=['tr ID', 'Received Time', 'Pick Up Time', 'Sender ID', 'Receiver ID', 'Tx Size', 'Tx Used Gas' , 'Tx fee', 'Miner ID', 'Execution Time', 'profit']
 
-        df7 = pd.DataFrame(Statistics.coalitionResult)
+        df7 = pd.DataFrame(Statistics.coalitionCountResult)
         df7.columns = ['Round', 'Remaining Coalition Count']
 
         df8 = pd.DataFrame(Statistics.userResult)
         df8.columns = ["ID", "connectedMiner", "profit", 'budget']
+
+        df9 = pd.DataFrame(Statistics.auctionResult)
+        df9.columns = ["TxID", "CoalitionID", "Expected Profit", 'Actual Profit', 'Profit Rate']
+
+        df10 = pd.DataFrame(Statistics.coalitionChangeResult)
+        df10.columns = ["Round", "CoalitionID", "Current User", 'Win Count', 'Total Count', 'Current Budget', 'Current Round Profit']
+
+        df11 = pd.DataFrame(Statistics.coalitionResults)
+        df11.columns = ['Coalition Id', 'User', 'Arbitrage Participation Rate', 'Profit Split Rate for Staker']
 
         writer = pd.ExcelWriter(fname, engine='xlsxwriter')
         df1.to_excel(writer, sheet_name='InputConfig')
         df2.to_excel(writer, sheet_name='SimOutput')
         df3.to_excel(writer, sheet_name='Profit')
         df4.to_excel(writer,sheet_name='Chain')
-        df7.to_excel(writer, sheet_name='Coalition')
+        df11.to_excel(writer, sheet_name='Initial Coalition')
+        df7.to_excel(writer, sheet_name='CoalitionCount')
         df8.to_excel(writer, sheet_name='User')
+        df9.to_excel(writer, sheet_name='Auction')
+        df10.to_excel(writer, sheet_name='CoalitionChanges')
         df6.to_excel(writer, sheet_name='Transaction', startcol=-1)
         writer.save()
 

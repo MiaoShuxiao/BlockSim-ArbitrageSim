@@ -97,7 +97,7 @@ class InputsConfig:
 
         ''' Node Parameters '''
         Nn = 10  # the total number of nodes in the network
-        u = 10 # user number for sim
+        u = 100 # user number for sim
         NODES = []
         from Models.Ethereum.Node import Node
         # here as an example we define nodes by assigning a unique id for each one + % of hash (computing) power
@@ -107,25 +107,32 @@ class InputsConfig:
         from Models.Ethereum.User import User
         from Models.Ethereum.Coalition import Coalition
         import numpy as np
+        import random
+        import copy
+
         USERS = []
         for w in range(u):
-            USERS.append(User(id=w, connectedMiner = np.random.choice (NODES).id, budget = 10 ** 18))
-        USERLATENCY = np.random.normal(0.4, 0.4, u)
+            USERS.append(User(id=w, connectedMiner = np.random.choice (NODES).id, budget = np.random.uniform(10 ** 17, 10 ** 19)))
+        USERLATENCY = np.random.normal(0.2, 0.2, u)
         USERLATENCY = USERLATENCY - min(USERLATENCY)
         ''' Initiate a Coalition with 4 nodes '''
-        c = 6
+        c = 10
         COALITIONS = []
-        COALITIONS.append(Coalition(id = 0, users = [0, 1, 2, 3], probRate = 0.8))
-        COALITIONS.append(Coalition(id = 1, users = [4, 5], probRate = 0.7))
-        for w in range(2, 6):
-            COALITIONS.append(Coalition(id = w, users = [w + 4], probRate = 0.5))
+        currentIndex = 0
+        userToSplit = u
+        for w in range(c):
+            userInCo = random.randrange(currentIndex, userToSplit - (c - w))
+            coProbRate = np.random.uniform(0.3, 0.8)
+            COALITIONS.append(Coalition(id = w, users = list(range(currentIndex, userInCo + 1)), probRate = coProbRate, splitRate = np.random.uniform(0.3, 0.7)))
+            currentIndex = userInCo
 
+        INITIALCOALITIONS = copy.deepcopy(COALITIONS)
         for co in COALITIONS:
             for userInCo in co.users:
                 co.currentRoundBudget = USERS[userInCo].budget
             print(co.id, " budget: ", co.currentRoundBudget)
-        latencyMean = 0.5
-        std = 0.5
+        latencyMean = 0.2
+        std = 0.2
         MATRIX = np.random.normal(latencyMean, std, size=(Nn, Nn))
         mirror = True
         if mirror == True:
@@ -137,18 +144,20 @@ class InputsConfig:
         np.fill_diagonal(MATRIX, 0)
 
         ''' Simulation Parameters '''
-        simTime = 500  # the simulation length (in seconds)
+        simTime = 36000  # the simulation length (in seconds)
         Runs = 1  # Number of simulation runs
-        arbiPercentage = 0.2
+        arbiPercentage = 0.1
         roundCount = 0
         blockCount = 0
         coalitionUpdatePerBlock = 13
         userMovingProb = 0.5
         COALITIONMOVECOST = 10 ** 17
         COALITIONCOUNTS = [[0, c]]
+        COALITIONDETAILS =[]
         FAILEDTXGASRATE = 0.2
         MINIMUMUPDATEGAP = 0.1
-        COALITIONPROCESSTIME = 0.05
+        COALITIONPROCESSTIME = 0.02
+        AUCTIONDETAILS = []
         ''' Input configurations for AppendableBlock model '''
     if model == 3:
         ''' Transaction Parameters '''
