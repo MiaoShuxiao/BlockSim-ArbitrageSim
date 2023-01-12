@@ -79,10 +79,14 @@ class BlockCommit(BaseBlockCommit):
             if c.currentRoundProfit > 0:
                 stakerReward = c.currentRoundProfit * c.splitRate
                 helperReward = c.currentRoundProfit * (1 - c.splitRate)
+                c.stakerRewardPerUnit = stakerReward / c.currentRoundBudget
+                c.avgHelperReward = helperReward / len(c.users)
             for userId in c.users:
                 #TODO: Update the profit distribution
                 p.USERS[userId].profit = p.USERS[userId].profit + stakerReward * p.USERS[userId].budget / c.currentRoundBudget
                 p.USERS[userId].profit = p.USERS[userId].profit + helperReward / len(c.users)
+                p.USERS[userId].currentRoundStakeProfit = stakerReward * p.USERS[userId].budget / c.currentRoundBudget
+                p.USERS[userId].currentRoundHelperProfit = helperReward / len(c.users)
                 p.USERS[userId].currentRoundProfit = stakerReward * p.USERS[userId].budget / c.currentRoundBudget
                 p.USERS[userId].currentRoundProfit += (p.USERS[userId].profit + helperReward / len(c.users))
         if winnerC != -1:
@@ -92,7 +96,10 @@ class BlockCommit(BaseBlockCommit):
                 newC = []
                 for u in c.users:
                     prob = random.random()
-                    if(prob > p.userMovingProb and p.USERS[u].currentRoundProfit/p.USERS[u].budget < winnerProfitRate):
+                    if(prob > p.USERS[u].userMovingProb
+                    and p.USERS[u].currentRoundProfit/(p.USERS[u].budget + p.helperUtilityCost) < winnerProfitRate
+                    and p.USERS[u].currentRoundProfit - p.COALITIONMOVECOST > 0):
+                        p.USERS[userId].profit
                         newC += [u]
                     else:
                         p.COALITIONS[winnerC].users += [u]
