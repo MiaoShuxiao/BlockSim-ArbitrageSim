@@ -32,7 +32,3 @@ or using any Python editor such as Spyder.
 ## Statistics and Results
 
 The results of the simulator is printed in an excel file at the end of the simulation. The results include the blockchain ledger, number of blocks mined, number of stale (uncles) blocks and the rewards gained by each miner etc. 
-
-## Contact
-
-For any query about how to use or even extend the simulator, feel free to contact me **alharbi.maher@gmail.com**
